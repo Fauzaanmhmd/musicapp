@@ -4,23 +4,22 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import com.example.musicapp.data.model.Song
 import com.example.musicapp.domain.usecase.NextSongUseCase
-import com.example.musicapp.domain.usecase.PlaySongUseCase
 import com.example.musicapp.domain.usecase.PreviousSongUseCase
 import com.example.musicapp.domain.usecase.SearchSongUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import androidx.media3.common.Player
 
 @HiltViewModel
 class MusicViewModel @Inject constructor(
     private val searchSongsUseCase: SearchSongUseCase,
-    private val playSongUseCase: PlaySongUseCase,
     private val nextSongUseCase: NextSongUseCase,
     private val previousSongUseCase: PreviousSongUseCase,
     private val context: Context
@@ -35,6 +34,9 @@ class MusicViewModel @Inject constructor(
     private val _isPlaying = MutableStateFlow(false)
     val isPlaying = _isPlaying.asStateFlow()
 
+    private val _songProgress = MutableStateFlow(0f)
+    val songProgress = _songProgress.asStateFlow()
+
     private val exoPlayer: ExoPlayer by lazy {
         ExoPlayer.Builder(context).build().apply {
             addListener(object : Player.Listener {
@@ -42,6 +44,16 @@ class MusicViewModel @Inject constructor(
                     _isPlaying.value = isPlaying
                 }
             })
+        }
+    }
+
+    init {
+        viewModelScope.launch {
+            while (true) {
+                _songProgress.value =
+                    if (exoPlayer.duration > 0) exoPlayer.currentPosition.toFloat() / exoPlayer.duration else 0f
+                delay(500)
+            }
         }
     }
 
@@ -55,14 +67,17 @@ class MusicViewModel @Inject constructor(
         if (_currentSong.value == song && _isPlaying.value) {
             exoPlayer.pause()
         } else {
-            _currentSong.value = playSongUseCase.execute(song)
-            _currentSong.value?.let {
-                val mediaItem = MediaItem.fromUri(it.previewUrl)
-                exoPlayer.setMediaItem(mediaItem)
-                exoPlayer.prepare()
-                exoPlayer.play()
-            }
+            _currentSong.value = song
+            val mediaItem = MediaItem.fromUri(song.previewUrl)
+            exoPlayer.setMediaItem(mediaItem)
+            exoPlayer.prepare()
+            exoPlayer.play()
         }
+    }
+
+    fun seekTo(position: Float) {
+        val seekPosition = (position * exoPlayer.duration).toLong()
+        exoPlayer.seekTo(seekPosition)
     }
 
     fun nextSong() {
@@ -84,3 +99,5 @@ class MusicViewModel @Inject constructor(
         exoPlayer.release()
     }
 }
+
+

@@ -7,6 +7,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.musicapp.presentation.components.SongItem
@@ -20,6 +21,7 @@ fun MusicScreen(viewModel: MusicViewModel = hiltViewModel()) {
     val songs by viewModel.songs.collectAsState()
     val currentSong by viewModel.currentSong.collectAsState()
     val isPlaying by viewModel.isPlaying.collectAsState()
+    val songProgress by viewModel.songProgress.collectAsState()
 
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp),
@@ -47,7 +49,16 @@ fun MusicScreen(viewModel: MusicViewModel = hiltViewModel()) {
             }
         }
         currentSong?.let {
-            NowPlayingSection(song = it, viewModel)
+            NowPlayingSection(song = it)
+            Slider(
+                value = songProgress,
+                onValueChange = { viewModel.seekTo(it) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = SliderDefaults.colors(
+                    thumbColor = Color.Green,
+                    activeTrackColor = Color.Green
+                )
+            )
             MusicControls(
                 isPlaying = isPlaying,
                 onPrevious = { viewModel.previousSong() },
@@ -59,7 +70,7 @@ fun MusicScreen(viewModel: MusicViewModel = hiltViewModel()) {
 }
 
 @Composable
-fun NowPlayingSection(song: Song, viewModel: MusicViewModel) {
+fun NowPlayingSection(song: Song) {
     Column(
         modifier = Modifier
             .fillMaxWidth()

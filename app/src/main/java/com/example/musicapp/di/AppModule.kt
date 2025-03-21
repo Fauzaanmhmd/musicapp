@@ -2,6 +2,7 @@ package com.example.musicapp.di
 
 import android.app.Application
 import android.content.Context
+import androidx.media3.exoplayer.ExoPlayer
 import com.example.musicapp.data.MusicRepository
 import com.example.musicapp.data.remote.MusicApi
 import com.example.musicapp.domain.usecase.NextSongUseCase
@@ -11,6 +12,7 @@ import com.example.musicapp.domain.usecase.SearchSongUseCase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -38,19 +40,19 @@ object AppModule {
     }
 
     @Provides
-    @Singleton
-    fun provideMusicRepository(api: MusicApi): MusicRepository {
-        return MusicRepository(api)
-    }
-
-    @Provides
     fun provideSearchSongUseCase(repository: MusicRepository): SearchSongUseCase {
         return SearchSongUseCase(repository)
     }
 
     @Provides
-    fun providePlaySongUseCase(): PlaySongUseCase {
-        return PlaySongUseCase()
+    @Singleton
+    fun provideExoPlayer(@ApplicationContext context: Context): ExoPlayer {
+        return ExoPlayer.Builder(context).build()
+    }
+
+    @Provides
+    fun providePlaySongUseCase(exoPlayer: ExoPlayer): PlaySongUseCase {
+        return PlaySongUseCase(exoPlayer)
     }
 
     @Provides
